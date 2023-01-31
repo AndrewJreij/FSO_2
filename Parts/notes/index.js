@@ -1,8 +1,12 @@
 // const http = require('http')
 const express = require('express')
+const cors = require('cors')
+
 const app = express()
 
+app.use(cors())
 app.use(express.json())
+app.use(express.static('build'))
 
 let notes = [
     {
@@ -71,8 +75,8 @@ app.post('/api/notes', (request, response) => {
     }
 
     const note = {
-        content: body.cotent,
-        important: body.imporant || false,
+        content: body.content,
+        important: body.important || false,
         date: new Date(),
         id: generateId(),
 
@@ -84,7 +88,7 @@ app.post('/api/notes', (request, response) => {
     response.json(note)
 })
 
-const PORT = 3001
+
 // app.listen(PORT)
 // console.log(`Server running on port ${PORT}`)
 
@@ -106,6 +110,7 @@ const requestLogger = (request, response, next) => {
 
 app.use(requestLogger)
 
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
