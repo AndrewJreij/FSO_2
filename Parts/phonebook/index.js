@@ -43,7 +43,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
 
     if (!body.name || !body.number) {
@@ -52,25 +52,36 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    const newPerson = new Person({
-        name: body.name,
-        number: body.number
-    })
+    var existingPerson
 
-    newPerson.save().then(savedPerson => {
-        response.json(savedPerson)
-    })
+    Person.find({ name: body.name })
+        .then(person => {
+            if (person) {
+                existingPerson = response.json
+            }
+        })
+        .catch(error => next(error))
+
+    if (!existingPerson) {
+        const newPerson = new Person({
+            name: body.name,
+            number: body.number
+        })
+
+        newPerson.save().then(savedPerson => {
+            response.json(savedPerson)
+        })
+            .catch(error => next(error))
+    }
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-    const body = request.body
+    const { name, number } = request.body
 
-    const newPerson = {
-        name: body.name,
-        number: body.number
-    }
-
-    Person.findByIdAndUpdate(request.params.id, newPerson, { new: true })
+    Person.findByIdAndUpdate(
+        request.params.id,
+        { name, number },
+        { new: true, runValidators: true, context: 'query' })
         .then(updatedPerson => {
             response.json(updatedPerson)
         })
@@ -82,6 +93,8 @@ const errorHandler = (error, request, response, next) => {
 
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).send({ error: 'Name shorter than 3 letters. Numbers should have forms 09-1234556 or 040-22334455' })
     }
 
     next(error)
