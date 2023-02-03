@@ -94,7 +94,7 @@ const errorHandler = (error, request, response, next) => {
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
     } else if (error.name === 'ValidationError') {
-        return response.status(400).send({ error: 'Name shorter than 3 letters. Numbers should have forms 09-1234556 or 040-22334455' })
+        return response.status(400).send({ error: 'Name shorter than 5 letters. Numbers should have forms 09-1234556 or 040-22334455' })
     }
 
     next(error)
