@@ -1,4 +1,17 @@
+require('dotenv').config()
+
 const mongoose = require('mongoose')
+mongoose.set('strictQuery', false)
+
+const url = process.env.MONGODB_URI_PERSON
+
+mongoose.connect(url)
+    .then(result => {
+        console.log('Connected to MongoDB')
+    })
+    .catch(error => {
+        console.log('Error connecting to MongoDB', error.message)
+    })
 
 const personSchema = new mongoose.Schema({
     name: {
