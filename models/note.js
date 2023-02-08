@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-
+//test
 mongoose.set('strictQuery', false)
 
 const url = process.env.MONGODB_URI
