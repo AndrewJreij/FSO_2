@@ -1,6 +1,3 @@
-var _ = require('lodash');
-
-
 const blogs = [
     {
         _id: "5a422a851b54a676234d17f7",
@@ -51,10 +48,3 @@ const blogs = [
         __v: 0
     }
 ]
-
-
-// const auth = _.groupBy(blogs, 'author')
-// const entries = Object.values(auth)
-// console.log(entries[2].length)
-// console.log(entries[0][1].length)
-// console.log(Object.keys(entries[1]))

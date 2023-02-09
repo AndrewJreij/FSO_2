@@ -88,3 +88,27 @@ describe('blog with highest amount of likes', () => {
         expect(result).toEqual(blogWithMostLikes)
     })
 })
+
+describe('author with the most amount of blogs', () => {
+    const authorWithMostBlogs = {
+        author: "Robert C. Martin",
+        blogs: 3
+    }
+
+    test('when an author has the most amount of blogs', () => {
+        const result = listHelper.mostBlogs(blogs)
+        expect(result).toEqual(authorWithMostBlogs)
+    })
+})
+
+describe('author with the most amount of likes', () => {
+    const authorWithMostLikes = {
+        author: "Edsger W. Dijkstra",
+        likes: 17
+    }
+
+    test('when an author has the most amount of likes', () => {
+        const result = listHelper.mostLikes(blogs)
+        expect(result).toEqual(authorWithMostLikes)
+    })
+})
