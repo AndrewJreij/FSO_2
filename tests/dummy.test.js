@@ -84,22 +84,22 @@ test('create blog with missing url or author fails', async () => {
         .send(newBlogWithNoTitle)
         .expect(400)
 
-    const newBlogWithNoAuthor = {
+    const newBlogWithNoUrl = {
         title: "This is a test with no likes",
-        url: "http://testurl.com"
+        author: "Test Author"
     }
 
     await api
         .post('/api/blogs')
-        .send(newBlogWithNoAuthor)
+        .send(newBlogWithNoUrl)
         .expect(400)
 
     const blogsAfter = await helper.blogsInDb()
 
 
-    expect(blogsAfter).toHaveLength(helper.initialBlogs)
+    expect(blogsAfter).toHaveLength(helper.initialBlogs.length)
 
-}, 10000)
+})
 
 test('dummy returns one', () => {
     const blogs = []
