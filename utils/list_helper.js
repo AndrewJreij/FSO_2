@@ -119,10 +119,6 @@ const blogsInDb = async () => {
     return blogs.map(blog => blog.toJSON())
 }
 
-afterAll(async () => {
-    await mongoose.connection.close()
-})
-
 module.exports = {
     dummy,
     totalLikes,
