@@ -20,13 +20,12 @@ describe.only('user tests', () => {
 
     test('user creation succeeds with a new username', async () => {
         const usersBefore = await helper.usersInDb()
-        const passwordHash = await bcrypt.hash('password', 10)
 
-        const newUser = new User({
+        const newUser = {
             username: 'username',
-            passwordHash: passwordHash,
+            password: 'password',
             name: 'name'
-        })
+        }
 
         await api
             .post('/api/users')
