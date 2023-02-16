@@ -1,10 +1,48 @@
 const supertest = require('supertest')
 const mongoose = require('mongoose')
 const helper = require('../utils/list_helper')
+const bcrypt = require('bcrypt')
 const app = require('../app')
 const api = supertest(app)
 
 const Blog = require('../models/blog')
+const User = require('../models/user')
+
+
+describe.only('user tests', () => {
+    beforeEach(async () => {
+        await User.deleteMany({})
+
+        const passwordHash = await bcrypt.hash('password', 10)
+        const user = new User({ username: 'root', passwordHash: passwordHash, name: 'superuser' })
+        await user.save()
+    })
+
+    test('user creation succeeds with a new username', async () => {
+        const usersBefore = await helper.usersInDb()
+        const passwordHash = await bcrypt.hash('password', 10)
+
+        const newUser = new User({
+            username: 'username',
+            passwordHash: passwordHash,
+            name: 'name'
+        })
+
+        await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter).toHaveLength(usersBefore.length + 1)
+
+        const usernames = usersAfter.map(r => r.username)
+        expect(usernames).toContain(
+            newUser.username
+        )
+    })
+})
 
 describe('fetch checks on initial data', () => {
     beforeEach(async () => {
@@ -143,6 +181,7 @@ describe('update operations', () => {
         )
     })
 })
+
 afterAll(async () => {
     await mongoose.connection.close()
 })
