@@ -41,6 +41,28 @@ describe.only('user tests', () => {
             newUser.username
         )
     })
+
+    test('user creation fails with proper message if the username is taken', async () => {
+        const usersBefore = await helper.usersInDb()
+
+        const newUser = {
+            username: 'root',
+            password: 'password',
+            name: 'superuser'
+        }
+
+        const result = await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+
+        expect(result.body.error).toContain('expected `username` to be unique')
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter).toHaveLength(usersBefore.length)
+
+    })
 })
 
 describe('fetch checks on initial data', () => {
