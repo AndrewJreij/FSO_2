@@ -11,10 +11,8 @@ blogsRouter.get('/', async (request, response) => {
 
 blogsRouter.post('/', async (request, response, next) => {
     const body = request.body
-
     const user = request.user
 
-    console.log(user)
     const blog = new Blog({
         title: body.title,
         author: body.author,
@@ -39,7 +37,7 @@ blogsRouter.delete('/:id', async (request, response) => {
         await Blog.findByIdAndDelete(request.params.id)
         response.status(204).end()
     } else {
-        return response.status(401).json({ error: 'invalid user' })
+        return response.status(401).json({ error: 'The user requesting deletion is not the same as the creator' })
     }
 
 })
