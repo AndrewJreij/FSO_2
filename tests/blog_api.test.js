@@ -4,12 +4,13 @@ const helper = require('../utils/list_helper')
 const bcrypt = require('bcrypt')
 const app = require('../app')
 const api = supertest(app)
+const jwt = require('jsonwebtoken')
 
 const Blog = require('../models/blog')
 const User = require('../models/user')
 
 
-describe.only('user tests', () => {
+describe('user tests', () => {
     beforeEach(async () => {
         await User.deleteMany({})
 
@@ -89,6 +90,8 @@ describe('fetch checks on initial data', () => {
 
 describe('post validation checks', () => {
     test('succesfully create a blog in db', async () => {
+        const blogsAtStart = await helper.blogsInDb()
+
         const newBlog = {
             title: "This is a test",
             author: "Test Author",
@@ -96,23 +99,55 @@ describe('post validation checks', () => {
             likes: 2
         }
 
+        const user = await User.findOne({ usernamme: 'username' })
+        const userForToken = {
+            username: user.username,
+            id: user._id
+        }
+
+        const token = jwt.sign(userForToken, process.env.SECRET)
+
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
 
         const blogsAtEnd = await helper.blogsInDb()
-        expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
+        expect(blogsAtEnd).toHaveLength(blogsAtStart.length + 1)
 
-        const response = await api.get('/api/blogs')
+        const response = await api
+            .get('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
 
+        console.log(response.body)
         const titles = response.body.map(r => r.title)
         expect(titles).toContain(
             'This is a test'
         )
     })
 
+    test.only('post request fails with valid error if no token is provided', async () => {
+        const blogsAtStart = await helper.blogsInDb()
+
+        const newBlog = {
+            title: "This is a test",
+            author: "Test Author",
+            url: "http://testurl.com",
+            likes: 2
+        }
+
+        const result = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .set('Authorization', 'Bearer ')
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+
+        expect(result.body.error).toContain('token missing or invalid')
+
+    })
 
     test('missing likes property defaults to 0', async () => {
         const newBlog = {
