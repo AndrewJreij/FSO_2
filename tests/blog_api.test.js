@@ -129,8 +129,6 @@ describe('post validation checks', () => {
     })
 
     test.only('post request fails with valid error if no token is provided', async () => {
-        const blogsAtStart = await helper.blogsInDb()
-
         const newBlog = {
             title: "This is a test",
             author: "Test Author",
