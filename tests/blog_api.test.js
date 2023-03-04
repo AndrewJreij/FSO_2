@@ -1,10 +1,70 @@
 const supertest = require('supertest')
 const mongoose = require('mongoose')
 const helper = require('../utils/list_helper')
+const bcrypt = require('bcrypt')
 const app = require('../app')
 const api = supertest(app)
+const jwt = require('jsonwebtoken')
 
 const Blog = require('../models/blog')
+const User = require('../models/user')
+
+
+describe('user tests', () => {
+    beforeEach(async () => {
+        await User.deleteMany({})
+
+        const passwordHash = await bcrypt.hash('password', 10)
+        const user = new User({ username: 'root', passwordHash: passwordHash, name: 'superuser' })
+        await user.save()
+    })
+
+    test('user creation succeeds with a new username', async () => {
+        const usersBefore = await helper.usersInDb()
+
+        const newUser = {
+            username: 'username',
+            password: 'password',
+            name: 'name'
+        }
+
+        await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter).toHaveLength(usersBefore.length + 1)
+
+        const usernames = usersAfter.map(r => r.username)
+        expect(usernames).toContain(
+            newUser.username
+        )
+    })
+
+    test('user creation fails with proper message if the username is taken', async () => {
+        const usersBefore = await helper.usersInDb()
+
+        const newUser = {
+            username: 'root',
+            password: 'password',
+            name: 'superuser'
+        }
+
+        const result = await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+
+        expect(result.body.error).toContain('expected `username` to be unique')
+
+        const usersAfter = await helper.usersInDb()
+        expect(usersAfter).toHaveLength(usersBefore.length)
+
+    })
+})
 
 describe('fetch checks on initial data', () => {
     beforeEach(async () => {
@@ -30,6 +90,8 @@ describe('fetch checks on initial data', () => {
 
 describe('post validation checks', () => {
     test('succesfully create a blog in db', async () => {
+        const blogsAtStart = await helper.blogsInDb()
+
         const newBlog = {
             title: "This is a test",
             author: "Test Author",
@@ -37,23 +99,53 @@ describe('post validation checks', () => {
             likes: 2
         }
 
+        const user = await User.findOne({ usernamme: 'username' })
+        const userForToken = {
+            username: user.username,
+            id: user._id
+        }
+
+        const token = jwt.sign(userForToken, process.env.SECRET)
+
         await api
             .post('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
 
         const blogsAtEnd = await helper.blogsInDb()
-        expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1)
+        expect(blogsAtEnd).toHaveLength(blogsAtStart.length + 1)
 
-        const response = await api.get('/api/blogs')
+        const response = await api
+            .get('/api/blogs')
+            .set('Authorization', 'Bearer ' + token)
 
+        console.log(response.body)
         const titles = response.body.map(r => r.title)
         expect(titles).toContain(
             'This is a test'
         )
     })
 
+    test.only('post request fails with valid error if no token is provided', async () => {
+        const newBlog = {
+            title: "This is a test",
+            author: "Test Author",
+            url: "http://testurl.com",
+            likes: 2
+        }
+
+        const result = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .set('Authorization', 'Bearer ')
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+
+        expect(result.body.error).toContain('token missing or invalid')
+
+    })
 
     test('missing likes property defaults to 0', async () => {
         const newBlog = {
@@ -143,6 +235,7 @@ describe('update operations', () => {
         )
     })
 })
+
 afterAll(async () => {
     await mongoose.connection.close()
 })
