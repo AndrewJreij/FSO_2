@@ -4,6 +4,7 @@ const helper = require('./test_helper')
 const app = require('../app')
 const api = supertest(app)
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 const Note = require('../models/note')
 const User = require('../models/user')
@@ -12,8 +13,8 @@ describe('when there is initially one user in db', () => {
     beforeEach(async () => {
         await User.deleteMany({})
 
-        const passwordHash = await bcrypt.hash('sekret', 10)
-        const user = new User({ username: 'root', passwordHash })
+        const passwordHash = await bcrypt.hash('password', 10)
+        const user = new User({ username: 'root', passwordHash, name: 'Superuser' })
 
         await user.save()
     })
@@ -31,7 +32,7 @@ describe('when there is initially one user in db', () => {
             .post('/api/users')
             .send(newUser)
             .expect(201)
-            .expect('Content-Type', /applcation\/json/)
+            .expect('Content-Type', 'application/json; charset=utf-8')
 
         const usersAtEnd = await helper.usersInDb()
         expect(usersAtEnd).toHaveLength(userAtStart.length + 1)
@@ -41,7 +42,7 @@ describe('when there is initially one user in db', () => {
     })
 
     test('creation fails with proper statuscode and message if username already taken', async () => {
-        const usersAtStart = helper.usersInDb()
+        const usersAtStart = await helper.usersInDb()
 
         const newUser = {
             username: 'root',
@@ -53,7 +54,7 @@ describe('when there is initially one user in db', () => {
             .post('/api/users')
             .send(newUser)
             .expect(400)
-            .expect('Content-Type', /applcation\/json/)
+            .expect('Content-Type', 'application/json; charset=utf-8')
 
         expect(result.body.error).toContain('expected `username` to be unique')
 
@@ -131,8 +132,20 @@ describe('when there is initially some notes saved', () => {
                 important: true,
             }
 
+            const user = await User.find({ username: "root" })
+            console.log(user)
+            const userForToken = {
+                username: user.username,
+                id: user._id
+            }
+
+            const token = jwt.sign(userForToken, process.env.SECRET)
+
+            console.log(token)
+
             await api
                 .post('/api/notes')
+                .set('Authorization', 'Bearer ' + token)
                 .send(newNote)
                 .expect(201)
                 .expect('Content-Type', /application\/json/)
